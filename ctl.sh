@@ -7,24 +7,23 @@ export DIGITALOCEAN_PRIVATE_NETWORKING=true
 export DIGITALOCEAN_REGION=sfo1
 export NUM_WORKERS=3
 
-function boldecho () {
-        echo "$(tput bold)$1$(tput color)"
-}
-
 case "$1" in 
         up)
                 if [[ -z "$DIGITALOCEAN_ACCESS_TOKEN" ]]; then
                     echo "Must set DIGITALOCEAN_ACCESS_TOKEN for the script to work."
                     exit 1
                 fi
+                
                 echo "=> Creating KV store for Consul."
                 docker-machine create -d digitalocean kvstore
+                
                 echo "=> Creating Swarm master node."
                 export KV_IP=$(docker-machine ssh kvstore 'ifconfig eth1 | grep "inet addr:" | cut -d: -f2 | cut -d" " -f1')
                 docker $(docker-machine config kvstore) run -d \
                         -p ${KV_IP}:8500:8500 \
                         -h consul \
                         progrium/consul -server -bootstrap
+                        
                 docker-machine create \
                     -d digitalocean \
                     --swarm \
@@ -33,6 +32,7 @@ case "$1" in
                     --engine-opt="cluster-store=consul://${KV_IP}:8500" \
                     --engine-opt="cluster-advertise=eth1:2376" \
                     queenbee
+                    
                 echo "=> Creating Swarm worker nodes."
                 for i in $(seq 1 $NUM_WORKERS); do
                     docker-machine create \
