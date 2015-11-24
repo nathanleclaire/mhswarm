@@ -1,0 +1,9 @@
+provision:
+  image: nathanleclaire/ansibleprovision
+  net: host
+  volumes:
+    - /root/.ssh:/hostssh
+  labels:
+    - com.nathanleclaire.ansibleprovison
+  environment:
+    - "affinity:container!=*provision*"
